@@ -1,7 +1,7 @@
 import type { CreateTaskDto, TaskDto, UpdateTaskDto } from '../types/task';
 
 const API_BASE_URL: string =
-  (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:5238/api';
+  (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:5000/api';
 
 class ApiError extends Error {
   public statusCode: number;

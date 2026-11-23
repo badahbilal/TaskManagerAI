@@ -28,7 +28,7 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
 
         builder.Property(t => t.CreatedAt)
             .IsRequired()
-            .HasDefaultValueSql("SYSUTCDATETIME()");
+            .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
         builder.HasOne(t => t.Category)
             .WithMany(c => c.Tasks)
