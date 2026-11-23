@@ -25,34 +25,14 @@ builder.Services.AddOpenApi();
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
-// CORS configuration for frontend (supports local dev, Vercel, Netlify, and custom domains)
+// CORS configuration for frontend (supports local dev, Vercel, Netlify, and any frontend domain)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.SetIsOriginAllowed((string origin) =>
-        {
-            if (string.IsNullOrWhiteSpace(origin))
-            {
-                return false;
-            }
-
-            Uri originUri = new Uri(origin);
-            if (originUri.Host == "localhost" || originUri.Host == "127.0.0.1")
-            {
-                return true;
-            }
-
-            if (originUri.Host.EndsWith(".vercel.app", StringComparison.OrdinalIgnoreCase) ||
-                originUri.Host.EndsWith(".netlify.app", StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
-            return false;
-        })
-        .AllowAnyHeader()
-        .AllowAnyMethod();
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
     });
 });
 

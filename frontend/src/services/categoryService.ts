@@ -1,7 +1,5 @@
 import type { CategoryDto, CreateCategoryDto, UpdateCategoryDto } from '../types/category';
-
-const API_BASE_URL: string =
-  (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:5000/api';
+import { API_BASE_URL } from './apiConfig';
 
 class ApiError extends Error {
   public statusCode: number;
