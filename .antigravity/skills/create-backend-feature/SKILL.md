@@ -1,4 +1,4 @@
-﻿---
+---
 name: create-backend-feature
 description: Step-by-step skill to add a new Vertical Slice feature in .NET 10 Clean Architecture
 ---
@@ -19,9 +19,13 @@ When asked to create a new backend feature (e.g., Tasks, Categories), execute th
 3. **Infrastructure Layer (`TaskManager.Infrastructure`):**
    - Implement the Repository interface using `DbContext`.
    - Register the Repository and Service in Dependency Injection.
+   - For any schema change, use EF Core CLI (`dotnet ef migrations add` and `dotnet ef database update`). Never apply DDL through MCP tools.
 
 4. **API Layer (`TaskManager.API`):**
    - Create a clean Controller or Minimal API endpoints delegating work to the Application Service.
 
-5. **Verification:**
-   - Run `dotnet build` inside `backend/` to verify everything compiles cleanly.
+5. **Testing & Verification:**
+   - Write comprehensive unit tests in `TaskManager.Tests` for all application service methods and business logic (strictly explicit types, NO `var`).
+   - Run `dotnet build` inside `backend/` to verify zero compilation errors.
+   - Run `dotnet test` inside `backend/` to verify all tests pass with 0 failures.
+   - Use the `sqlserver` MCP tool in read-only mode (`list_tables`, `describe_table`) to verify database schema changes.
