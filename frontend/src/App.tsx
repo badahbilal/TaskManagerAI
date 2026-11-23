@@ -1,27 +1,37 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { CategoryManager } from './components/CategoryManager';
 import { TaskFilters } from './components/TaskFilters';
 import { TaskForm } from './components/TaskForm';
 import { TaskItem } from './components/TaskItem';
 import { TaskStats } from './components/TaskStats';
+import { categoryService } from './services/categoryService';
 import { taskService } from './services/taskService';
+import type { CategoryDto, CreateCategoryDto } from './types/category';
 import type { CreateTaskDto, TaskDto, TaskFilter, UpdateTaskDto } from './types/task';
 import './App.css';
 
 export const App: React.FC = () => {
   const [tasks, setTasks] = useState<TaskDto[]>([]);
+  const [categories, setCategories] = useState<CategoryDto[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isCategorySubmitting, setIsCategorySubmitting] = useState<boolean>(false);
   const [updatingIds, setUpdatingIds] = useState<number[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [filter, setFilter] = useState<TaskFilter>('all');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  const loadTasks = useCallback(async (): Promise<void> => {
+  const loadData = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const fetchedTasks = await taskService.getTasks();
+      const [fetchedTasks, fetchedCategories] = await Promise.all([
+        taskService.getTasks(),
+        categoryService.getCategories(),
+      ]);
       setTasks(fetchedTasks);
+      setCategories(fetchedCategories);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to connect to backend API';
       setErrorMessage(message);
@@ -31,16 +41,21 @@ export const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    loadTasks();
-  }, [loadTasks]);
+    loadData();
+  }, [loadData]);
 
-  const handleCreateTask = async (title: string, description: string): Promise<void> => {
+  const handleCreateTask = async (
+    title: string,
+    description: string,
+    categoryId: number | null
+  ): Promise<void> => {
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
       const createDto: CreateTaskDto = {
         title,
         description: description ? description : null,
+        categoryId: categoryId,
       };
       const createdTask = await taskService.createTask(createDto);
       setTasks((prev) => [createdTask, ...prev]);
@@ -50,6 +65,22 @@ export const App: React.FC = () => {
       throw error;
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateTask = async (id: number, dto: UpdateTaskDto): Promise<void> => {
+    setUpdatingIds((prev) => [...prev, id]);
+    setErrorMessage(null);
+
+    try {
+      const updatedTask = await taskService.updateTask(id, dto);
+      setTasks((prev) => prev.map((t) => (t.id === id ? updatedTask : t)));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update task';
+      setErrorMessage(message);
+      throw error;
+    } finally {
+      setUpdatingIds((prev) => prev.filter((updatingId) => updatingId !== id));
     }
   };
 
@@ -63,6 +94,7 @@ export const App: React.FC = () => {
         title: task.title,
         description: task.description,
         isCompleted: newCompletionStatus,
+        categoryId: task.categoryId,
       };
       const updatedTask = await taskService.updateTask(task.id, updateDto);
       setTasks((prev) =>
@@ -91,6 +123,42 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleCreateCategory = async (dto: CreateCategoryDto): Promise<void> => {
+    setIsCategorySubmitting(true);
+    setErrorMessage(null);
+    try {
+      const createdCategory = await categoryService.createCategory(dto);
+      setCategories((prev) => [...prev, createdCategory]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create category';
+      setErrorMessage(message);
+      throw error;
+    } finally {
+      setIsCategorySubmitting(false);
+    }
+  };
+
+  const handleDeleteCategory = async (id: number): Promise<void> => {
+    setIsCategorySubmitting(true);
+    setErrorMessage(null);
+    try {
+      await categoryService.deleteCategory(id);
+      setCategories((prev) => prev.filter((c) => c.id !== id));
+      // Backend automatically sets task.categoryId to null via SetNull delete behavior
+      setTasks((prev) =>
+        prev.map((t) => (t.categoryId === id ? { ...t, categoryId: null, category: null } : t))
+      );
+      if (selectedCategoryId === id) {
+        setSelectedCategoryId('all');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete category';
+      setErrorMessage(message);
+    } finally {
+      setIsCategorySubmitting(false);
+    }
+  };
+
   const completedCount = useMemo(
     () => tasks.filter((t) => t.isCompleted).length,
     [tasks]
@@ -108,13 +176,17 @@ export const App: React.FC = () => {
         return true;
       })
       .filter((task) => {
+        if (selectedCategoryId === 'all') return true;
+        return task.categoryId === selectedCategoryId;
+      })
+      .filter((task) => {
         if (!searchQuery.trim()) return true;
         const query = searchQuery.toLowerCase();
         const matchesTitle = task.title.toLowerCase().includes(query);
         const matchesDesc = task.description?.toLowerCase().includes(query) ?? false;
         return matchesTitle || matchesDesc;
       });
-  }, [tasks, filter, searchQuery]);
+  }, [tasks, filter, selectedCategoryId, searchQuery]);
 
   return (
     <div className="app-container">
@@ -140,9 +212,9 @@ export const App: React.FC = () => {
         <button
           type="button"
           className="btn btn-secondary btn-refresh"
-          onClick={loadTasks}
+          onClick={loadData}
           disabled={isLoading}
-          title="Refresh tasks"
+          title="Refresh tasks and categories"
         >
           <svg className={isLoading ? 'spinning' : ''} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="23 4 23 10 17 10" />
@@ -181,7 +253,17 @@ export const App: React.FC = () => {
               completed={completedCount}
               pending={pendingCount}
             />
-            <TaskForm onSubmit={handleCreateTask} isSubmitting={isSubmitting} />
+            <CategoryManager
+              categories={categories}
+              onCreateCategory={handleCreateCategory}
+              onDeleteCategory={handleDeleteCategory}
+              isSubmitting={isCategorySubmitting}
+            />
+            <TaskForm
+              categories={categories}
+              onSubmit={handleCreateTask}
+              isSubmitting={isSubmitting}
+            />
           </div>
 
           <div className="dashboard-right">
@@ -190,6 +272,9 @@ export const App: React.FC = () => {
               onFilterChange={setFilter}
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
+              categories={categories}
+              selectedCategoryId={selectedCategoryId}
+              onCategoryFilterChange={setSelectedCategoryId}
               totalCount={tasks.length}
               pendingCount={pendingCount}
               completedCount={completedCount}
@@ -199,7 +284,7 @@ export const App: React.FC = () => {
               {isLoading ? (
                 <div className="loading-state">
                   <div className="spinner" />
-                  <p>Loading tasks from .NET 10 API...</p>
+                  <p>Loading tasks and categories from .NET 10 API...</p>
                 </div>
               ) : filteredTasks.length === 0 ? (
                 <div className="empty-state">
@@ -216,6 +301,8 @@ export const App: React.FC = () => {
                   <p>
                     {searchQuery
                       ? 'No tasks matched your search query.'
+                      : selectedCategoryId !== 'all'
+                      ? 'No tasks found in the selected category.'
                       : filter !== 'all'
                       ? `No ${filter} tasks right now.`
                       : 'You have no tasks yet. Create your first task using the form on the left!'}
@@ -227,7 +314,9 @@ export const App: React.FC = () => {
                     <TaskItem
                       key={task.id}
                       task={task}
+                      categories={categories}
                       onToggleComplete={handleToggleComplete}
+                      onUpdate={handleUpdateTask}
                       onDelete={handleDeleteTask}
                       isUpdating={updatingIds.includes(task.id)}
                     />

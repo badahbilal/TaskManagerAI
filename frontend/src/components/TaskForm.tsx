@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
+import type { CategoryDto } from '../types/category';
 
 export interface TaskFormProps {
-  onSubmit: (title: string, description: string) => Promise<void>;
+  categories: CategoryDto[];
+  onSubmit: (title: string, description: string, categoryId: number | null) => Promise<void>;
   isSubmitting: boolean;
 }
 
-export const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, isSubmitting }) => {
+export const TaskForm: React.FC<TaskFormProps> = ({ categories, onSubmit, isSubmitting }) => {
   const [title, setTitle] = useState<string>('');
   const [description, setDescription] = useState<string>('');
+  const [categoryId, setCategoryId] = useState<string>('');
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
@@ -26,9 +29,11 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, isSubmitting }) =>
 
     setValidationError(null);
     try {
-      await onSubmit(trimmedTitle, description.trim());
+      const parsedCategoryId = categoryId ? parseInt(categoryId, 10) : null;
+      await onSubmit(trimmedTitle, description.trim(), parsedCategoryId);
       setTitle('');
       setDescription('');
+      setCategoryId('');
     } catch {
       // Handled by parent component
     }
@@ -61,6 +66,23 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, isSubmitting }) =>
           onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
           disabled={isSubmitting}
         />
+      </div>
+      <div className="form-group">
+        <label htmlFor="task-category-select" className="form-label">Category</label>
+        <select
+          id="task-category-select"
+          className="form-select"
+          value={categoryId}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCategoryId(e.target.value)}
+          disabled={isSubmitting}
+        >
+          <option value="">No Category</option>
+          {categories.map((cat) => (
+            <option key={cat.id} value={cat.id.toString()}>
+              {cat.name}
+            </option>
+          ))}
+        </select>
       </div>
       <div className="form-actions">
         <button
