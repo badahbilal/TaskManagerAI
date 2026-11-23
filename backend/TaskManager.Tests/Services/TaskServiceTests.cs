@@ -26,6 +26,7 @@ public class TaskServiceTests
     public async Task GetAllTasksAsync_WhenTasksExist_ReturnsMappedDtos()
     {
         // Arrange
+        Category sampleCategory = new Category { Id = 1, Name = "Work", Color = "#6366f1" };
         List<TaskItem> mockTasks = new List<TaskItem>
         {
             new TaskItem
@@ -34,7 +35,9 @@ public class TaskServiceTests
                 Title = "Test Task 1",
                 Description = "Description 1",
                 IsCompleted = false,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                CategoryId = 1,
+                Category = sampleCategory
             },
             new TaskItem
             {
@@ -42,7 +45,9 @@ public class TaskServiceTests
                 Title = "Test Task 2",
                 Description = "Description 2",
                 IsCompleted = true,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                CategoryId = null,
+                Category = null
             }
         };
 
@@ -59,9 +64,16 @@ public class TaskServiceTests
         Assert.Equal(1, result[0].Id);
         Assert.Equal("Test Task 1", result[0].Title);
         Assert.False(result[0].IsCompleted);
+        Assert.Equal(1, result[0].CategoryId);
+        Assert.NotNull(result[0].Category);
+        Assert.Equal("Work", result[0].Category!.Name);
+
         Assert.Equal(2, result[1].Id);
         Assert.Equal("Test Task 2", result[1].Title);
         Assert.True(result[1].IsCompleted);
+        Assert.Null(result[1].CategoryId);
+        Assert.Null(result[1].Category);
+
         _repositoryMock.Verify(repo => repo.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -87,13 +99,16 @@ public class TaskServiceTests
     {
         // Arrange
         int taskId = 10;
+        Category category = new Category { Id = 2, Name = "Personal", Color = "#10b981" };
         TaskItem mockTask = new TaskItem
         {
             Id = taskId,
             Title = "Specific Task",
             Description = "Specific Description",
             IsCompleted = false,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            CategoryId = 2,
+            Category = category
         };
 
         _repositoryMock
@@ -109,6 +124,9 @@ public class TaskServiceTests
         Assert.Equal("Specific Task", result.Title);
         Assert.Equal("Specific Description", result.Description);
         Assert.False(result.IsCompleted);
+        Assert.Equal(2, result.CategoryId);
+        Assert.NotNull(result.Category);
+        Assert.Equal("Personal", result.Category!.Name);
         _repositoryMock.Verify(repo => repo.GetByIdAsync(taskId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -133,14 +151,16 @@ public class TaskServiceTests
     public async Task CreateTaskAsync_ValidDto_CreatesAndReturnsDto()
     {
         // Arrange
-        CreateTaskDto createDto = new CreateTaskDto("New Task", "New Description");
+        CreateTaskDto createDto = new CreateTaskDto("New Task", "New Description", 1);
         TaskItem persistedTask = new TaskItem
         {
             Id = 1,
             Title = createDto.Title,
             Description = createDto.Description,
             IsCompleted = false,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            CategoryId = 1,
+            Category = new Category { Id = 1, Name = "Work", Color = "#6366f1" }
         };
 
         _repositoryMock
@@ -156,8 +176,10 @@ public class TaskServiceTests
         Assert.Equal("New Task", result.Title);
         Assert.Equal("New Description", result.Description);
         Assert.False(result.IsCompleted);
+        Assert.Equal(1, result.CategoryId);
+        Assert.NotNull(result.Category);
         _repositoryMock.Verify(repo => repo.AddAsync(
-            It.Is<TaskItem>(t => t.Title == "New Task" && t.Description == "New Description" && !t.IsCompleted),
+            It.Is<TaskItem>(t => t.Title == "New Task" && t.Description == "New Description" && !t.IsCompleted && t.CategoryId == 1),
             It.IsAny<CancellationToken>()),
             Times.Once);
     }
@@ -167,14 +189,16 @@ public class TaskServiceTests
     {
         // Arrange
         int taskId = 5;
-        UpdateTaskDto updateDto = new UpdateTaskDto("Updated Title", "Updated Description", true);
+        UpdateTaskDto updateDto = new UpdateTaskDto("Updated Title", "Updated Description", true, 3);
         TaskItem existingTask = new TaskItem
         {
             Id = taskId,
             Title = "Old Title",
             Description = "Old Description",
             IsCompleted = false,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            CategoryId = 1,
+            Category = new Category { Id = 1, Name = "Old Category", Color = "#000" }
         };
 
         _repositoryMock
@@ -194,6 +218,7 @@ public class TaskServiceTests
         Assert.Equal("Updated Title", result.Title);
         Assert.Equal("Updated Description", result.Description);
         Assert.True(result.IsCompleted);
+        Assert.Equal(3, result.CategoryId);
         _repositoryMock.Verify(repo => repo.GetByIdAsync(taskId, It.IsAny<CancellationToken>()), Times.Once);
         _repositoryMock.Verify(repo => repo.UpdateAsync(existingTask, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -203,7 +228,7 @@ public class TaskServiceTests
     {
         // Arrange
         int taskId = 999;
-        UpdateTaskDto updateDto = new UpdateTaskDto("Updated Title", "Updated Description", true);
+        UpdateTaskDto updateDto = new UpdateTaskDto("Updated Title", "Updated Description", true, null);
 
         _repositoryMock
             .Setup(repo => repo.GetByIdAsync(taskId, It.IsAny<CancellationToken>()))
@@ -229,7 +254,9 @@ public class TaskServiceTests
             Title = "To Delete",
             Description = null,
             IsCompleted = false,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            CategoryId = null,
+            Category = null
         };
 
         _repositoryMock

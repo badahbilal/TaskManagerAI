@@ -18,6 +18,7 @@ public class TaskRepository : ITaskRepository
     {
         List<TaskItem> tasks = await _context.Tasks
             .AsNoTracking()
+            .Include(t => t.Category)
             .OrderByDescending(t => t.CreatedAt)
             .ToListAsync(cancellationToken);
 
@@ -27,6 +28,7 @@ public class TaskRepository : ITaskRepository
     public async Task<TaskItem?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         TaskItem? task = await _context.Tasks
+            .Include(t => t.Category)
             .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
 
         return task;
@@ -36,6 +38,12 @@ public class TaskRepository : ITaskRepository
     {
         await _context.Tasks.AddAsync(task, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
+
+        if (task.CategoryId.HasValue)
+        {
+            await _context.Entry(task).Reference(t => t.Category).LoadAsync(cancellationToken);
+        }
+
         return task;
     }
 
@@ -43,6 +51,11 @@ public class TaskRepository : ITaskRepository
     {
         _context.Tasks.Update(task);
         await _context.SaveChangesAsync(cancellationToken);
+
+        if (task.CategoryId.HasValue)
+        {
+            await _context.Entry(task).Reference(t => t.Category).LoadAsync(cancellationToken);
+        }
     }
 
     public async Task DeleteAsync(TaskItem task, CancellationToken cancellationToken = default)

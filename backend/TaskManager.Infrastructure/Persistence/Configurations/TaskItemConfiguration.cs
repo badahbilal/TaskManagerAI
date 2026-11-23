@@ -29,5 +29,10 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
         builder.Property(t => t.CreatedAt)
             .IsRequired()
             .HasDefaultValueSql("SYSUTCDATETIME()");
+
+        builder.HasOne(t => t.Category)
+            .WithMany(c => c.Tasks)
+            .HasForeignKey(t => t.CategoryId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

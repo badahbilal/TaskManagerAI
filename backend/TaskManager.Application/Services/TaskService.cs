@@ -16,13 +16,7 @@ public class TaskService : ITaskService
     public async Task<List<TaskDto>> GetAllTasksAsync(CancellationToken cancellationToken = default)
     {
         List<TaskItem> tasks = await _taskRepository.GetAllAsync(cancellationToken);
-        List<TaskDto> dtos = tasks.Select(t => new TaskDto(
-            t.Id,
-            t.Title,
-            t.Description,
-            t.IsCompleted,
-            t.CreatedAt
-        )).ToList();
+        List<TaskDto> dtos = tasks.Select(MapToDto).ToList();
 
         return dtos;
     }
@@ -35,7 +29,7 @@ public class TaskService : ITaskService
             return null;
         }
 
-        return new TaskDto(task.Id, task.Title, task.Description, task.IsCompleted, task.CreatedAt);
+        return MapToDto(task);
     }
 
     public async Task<TaskDto> CreateTaskAsync(CreateTaskDto dto, CancellationToken cancellationToken = default)
@@ -45,17 +39,12 @@ public class TaskService : ITaskService
             Title = dto.Title,
             Description = dto.Description,
             IsCompleted = false,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            CategoryId = dto.CategoryId
         };
 
         TaskItem createdTask = await _taskRepository.AddAsync(newTask, cancellationToken);
-        return new TaskDto(
-            createdTask.Id,
-            createdTask.Title,
-            createdTask.Description,
-            createdTask.IsCompleted,
-            createdTask.CreatedAt
-        );
+        return MapToDto(createdTask);
     }
 
     public async Task<TaskDto?> UpdateTaskAsync(int id, UpdateTaskDto dto, CancellationToken cancellationToken = default)
@@ -69,15 +58,10 @@ public class TaskService : ITaskService
         existingTask.Title = dto.Title;
         existingTask.Description = dto.Description;
         existingTask.IsCompleted = dto.IsCompleted;
+        existingTask.CategoryId = dto.CategoryId;
 
         await _taskRepository.UpdateAsync(existingTask, cancellationToken);
-        return new TaskDto(
-            existingTask.Id,
-            existingTask.Title,
-            existingTask.Description,
-            existingTask.IsCompleted,
-            existingTask.CreatedAt
-        );
+        return MapToDto(existingTask);
     }
 
     public async Task<bool> DeleteTaskAsync(int id, CancellationToken cancellationToken = default)
@@ -90,5 +74,22 @@ public class TaskService : ITaskService
 
         await _taskRepository.DeleteAsync(existingTask, cancellationToken);
         return true;
+    }
+
+    private static TaskDto MapToDto(TaskItem task)
+    {
+        CategoryDto? categoryDto = task.Category != null
+            ? new CategoryDto(task.Category.Id, task.Category.Name, task.Category.Color)
+            : null;
+
+        return new TaskDto(
+            task.Id,
+            task.Title,
+            task.Description,
+            task.IsCompleted,
+            task.CreatedAt,
+            task.CategoryId,
+            categoryDto
+        );
     }
 }
