@@ -13,6 +13,7 @@ export interface TaskFiltersProps {
   totalCount: number;
   pendingCount: number;
   completedCount: number;
+  onOpenCategoryModal?: () => void;
 }
 
 export const TaskFilters: React.FC<TaskFiltersProps> = ({
@@ -26,10 +27,69 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
   totalCount,
   pendingCount,
   completedCount,
+  onOpenCategoryModal,
 }) => {
   return (
-    <div className="filters-bar">
-      <div className="filters-top-row">
+    <div className="filters-section-container">
+      {/* Category Pills Row with + Category Button */}
+      <div className="category-pills-bar">
+        <div className="category-pills-scrollable">
+          <button
+            type="button"
+            className={`category-pill ${selectedCategoryId === 'all' ? 'active' : ''}`}
+            onClick={() => onCategoryFilterChange('all')}
+          >
+            <span className="category-pill-dot all-dot" />
+            All Tasks
+          </button>
+
+          {categories.map((category) => {
+            const isSelected: boolean = selectedCategoryId === category.id;
+            const color: string = category.color || '#6366f1';
+            return (
+              <button
+                key={category.id}
+                type="button"
+                className={`category-pill ${isSelected ? 'active' : ''}`}
+                style={
+                  isSelected
+                    ? {
+                        backgroundColor: color,
+                        borderColor: color,
+                        color: '#ffffff',
+                      }
+                    : undefined
+                }
+                onClick={() => onCategoryFilterChange(isSelected ? 'all' : category.id)}
+              >
+                <span
+                  className="category-pill-dot"
+                  style={{ backgroundColor: isSelected ? '#ffffff' : color }}
+                />
+                {category.name}
+              </button>
+            );
+          })}
+        </div>
+
+        {onOpenCategoryModal && (
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm btn-add-category-pill"
+            onClick={onOpenCategoryModal}
+            title="Create or manage categories"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Category
+          </button>
+        )}
+      </div>
+
+      {/* Search Input & Status Tabs Row */}
+      <div className="filters-sub-row">
         <div className="search-input-wrapper">
           <svg className="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8" />
@@ -54,66 +114,30 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           )}
         </div>
 
-        <div className="filter-tabs">
+        <div className="status-filter-tabs">
           <button
             type="button"
-            className={`filter-tab ${currentFilter === 'all' ? 'active' : ''}`}
+            className={`status-tab ${currentFilter === 'all' ? 'active' : ''}`}
             onClick={() => onFilterChange('all')}
           >
-            All ({totalCount})
+            All <span className="tab-count">{totalCount}</span>
           </button>
           <button
             type="button"
-            className={`filter-tab ${currentFilter === 'pending' ? 'active' : ''}`}
+            className={`status-tab ${currentFilter === 'pending' ? 'active' : ''}`}
             onClick={() => onFilterChange('pending')}
           >
-            Pending ({pendingCount})
+            Pending <span className="tab-count">{pendingCount}</span>
           </button>
           <button
             type="button"
-            className={`filter-tab ${currentFilter === 'completed' ? 'active' : ''}`}
+            className={`status-tab ${currentFilter === 'completed' ? 'active' : ''}`}
             onClick={() => onFilterChange('completed')}
           >
-            Completed ({completedCount})
+            Done <span className="tab-count">{completedCount}</span>
           </button>
         </div>
       </div>
-
-      {categories.length > 0 && (
-        <div className="category-filter-chips">
-          <span className="category-filter-label">Filter by Category:</span>
-          <button
-            type="button"
-            className={`category-chip ${selectedCategoryId === 'all' ? 'active' : ''}`}
-            onClick={() => onCategoryFilterChange('all')}
-          >
-            All
-          </button>
-          {categories.map((category) => {
-            const isSelected = selectedCategoryId === category.id;
-            const color = category.color || '#6366f1';
-            return (
-              <button
-                key={category.id}
-                type="button"
-                className={`category-chip ${isSelected ? 'active' : ''}`}
-                style={
-                  isSelected
-                    ? { backgroundColor: color, color: '#fff', borderColor: color }
-                    : { borderColor: `${color}60`, color: color }
-                }
-                onClick={() => onCategoryFilterChange(isSelected ? 'all' : category.id)}
-              >
-                <span
-                  className="category-chip-dot"
-                  style={{ backgroundColor: isSelected ? '#fff' : color }}
-                />
-                {category.name}
-              </button>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 };

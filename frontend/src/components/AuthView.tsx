@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTheme } from '../hooks/useTheme';
 import { authService } from '../services/authService';
 import type { UserDto } from '../types/auth';
 
@@ -7,6 +8,7 @@ export interface AuthViewProps {
 }
 
 export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
+  const [theme, toggleTheme] = useTheme();
   const [isRegister, setIsRegister] = useState<boolean>(false);
   const [fullName, setFullName] = useState<string>('');
   const [email, setEmail] = useState<string>('');
@@ -61,17 +63,46 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
     }
   };
 
-  const toggleMode = (): void => {
-    setIsRegister(!isRegister);
+  const toggleMode = (registerMode: boolean): void => {
+    setIsRegister(registerMode);
     setErrorMessage(null);
   };
 
   return (
     <div className="auth-wrapper">
+      {/* Theme toggle in top right corner */}
+      <div className="auth-top-toolbar">
+        <button
+          type="button"
+          className="btn-theme-toggle"
+          onClick={toggleTheme}
+          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          aria-label="Toggle theme"
+        >
+          {theme === 'dark' ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          )}
+        </button>
+      </div>
+
       <div className="auth-card">
         <div className="auth-header">
           <div className="brand-logo auth-logo">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 2v4" />
               <path d="m16.2 7.8 2.9-2.9" />
               <path d="M18 12h4" />
@@ -84,10 +115,26 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
           </div>
           <h1 className="auth-title">TaskManager AI</h1>
           <p className="auth-subtitle">
-            {isRegister
-              ? 'Create an account to isolate and organize your tasks'
-              : 'Sign in to access your isolated workspace'}
+            Modern SaaS productivity workspace with daily planning & history archive
           </p>
+        </div>
+
+        {/* Tab switch between Sign In and Register */}
+        <div className="auth-tab-bar">
+          <button
+            type="button"
+            className={`auth-tab ${!isRegister ? 'active' : ''}`}
+            onClick={() => toggleMode(false)}
+          >
+            Sign In
+          </button>
+          <button
+            type="button"
+            className={`auth-tab ${isRegister ? 'active' : ''}`}
+            onClick={() => toggleMode(true)}
+          >
+            Create Account
+          </button>
         </div>
 
         {errorMessage && (
@@ -159,20 +206,20 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
             ) : isRegister ? (
               'Create Account'
             ) : (
-              'Sign In'
+              'Sign In to Workspace'
             )}
           </button>
         </form>
 
         <div className="auth-footer">
-          <span>{isRegister ? 'Already have an account?' : "Don't have an account?"}</span>{' '}
+          <span>{isRegister ? 'Already have an account?' : "Don't have an account yet?"}</span>{' '}
           <button
             type="button"
             className="auth-toggle-btn"
-            onClick={toggleMode}
+            onClick={() => toggleMode(!isRegister)}
             disabled={isLoading}
           >
-            {isRegister ? 'Sign In' : 'Sign Up'}
+            {isRegister ? 'Sign in' : 'Create an account'}
           </button>
         </div>
       </div>
