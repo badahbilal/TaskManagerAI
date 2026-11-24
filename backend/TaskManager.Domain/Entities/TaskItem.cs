@@ -1,3 +1,5 @@
+using System;
+
 namespace TaskManager.Domain.Entities;
 
 public class TaskItem
@@ -7,6 +9,10 @@ public class TaskItem
     public string? Description { get; set; }
     public bool IsCompleted { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public DateOnly DueDate { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow);
+    public bool IsDaily { get; set; } = false;
+    public DateTime? CompletedAt { get; set; }
 
     public int? CategoryId { get; set; }
     public Category? Category { get; set; }

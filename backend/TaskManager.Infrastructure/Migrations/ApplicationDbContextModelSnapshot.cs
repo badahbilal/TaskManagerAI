@@ -60,6 +60,9 @@ namespace TaskManager.Infrastructure.Migrations
                     b.Property<int?>("CategoryId")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -68,7 +71,17 @@ namespace TaskManager.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
+                    b.Property<DateOnly>("DueDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("date")
+                        .HasDefaultValueSql("CURRENT_DATE");
+
                     b.Property<bool>("IsCompleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsDaily")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(false);

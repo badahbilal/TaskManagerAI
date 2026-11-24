@@ -41,8 +41,22 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 export const taskService = {
-  async getTasks(): Promise<TaskDto[]> {
-    const response: Response = await fetch(`${API_BASE_URL}/tasks`, {
+  async getTasks(date?: string): Promise<TaskDto[]> {
+    const url: string = date
+      ? `${API_BASE_URL}/tasks?date=${encodeURIComponent(date)}`
+      : `${API_BASE_URL}/tasks`;
+    const response: Response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        ...authService.getAuthHeaders(),
+      },
+    });
+    return handleResponse<TaskDto[]>(response);
+  },
+
+  async getUpcomingTasks(): Promise<TaskDto[]> {
+    const response: Response = await fetch(`${API_BASE_URL}/tasks/upcoming`, {
       method: 'GET',
       headers: {
         Accept: 'application/json',

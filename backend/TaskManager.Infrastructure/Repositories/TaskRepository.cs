@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -30,6 +31,43 @@ public class TaskRepository : ITaskRepository
         return tasks;
     }
 
+    public async Task<List<TaskItem>> GetAllByUserIdAndDateAsync(int userId, DateOnly date, CancellationToken cancellationToken = default)
+    {
+        List<TaskItem> tasks = await _context.Tasks
+            .AsNoTracking()
+            .Where(t => t.UserId == userId && t.DueDate == date)
+            .Include(t => t.Category)
+            .OrderBy(t => t.IsCompleted)
+            .ThenByDescending(t => t.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        return tasks;
+    }
+
+    public async Task<List<TaskItem>> GetUpcomingByUserIdAsync(int userId, DateOnly today, CancellationToken cancellationToken = default)
+    {
+        List<TaskItem> tasks = await _context.Tasks
+            .AsNoTracking()
+            .Where(t => t.UserId == userId && t.DueDate > today)
+            .Include(t => t.Category)
+            .OrderBy(t => t.DueDate)
+            .ThenBy(t => t.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        return tasks;
+    }
+
+    public async Task<List<TaskItem>> GetPastDailyTemplatesAsync(int userId, DateOnly today, CancellationToken cancellationToken = default)
+    {
+        List<TaskItem> tasks = await _context.Tasks
+            .AsNoTracking()
+            .Where(t => t.UserId == userId && t.IsDaily && t.DueDate < today)
+            .Include(t => t.Category)
+            .ToListAsync(cancellationToken);
+
+        return tasks;
+    }
+
     public async Task<TaskItem?> GetByIdAndUserIdAsync(int id, int userId, CancellationToken cancellationToken = default)
     {
         TaskItem? task = await _context.Tasks
@@ -50,6 +88,12 @@ public class TaskRepository : ITaskRepository
         }
 
         return task;
+    }
+
+    public async Task AddRangeAsync(IEnumerable<TaskItem> tasks, CancellationToken cancellationToken = default)
+    {
+        await _context.Tasks.AddRangeAsync(tasks, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
     public async Task UpdateAsync(TaskItem task, CancellationToken cancellationToken = default)

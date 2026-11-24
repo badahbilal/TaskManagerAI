@@ -24,10 +24,18 @@ public class TasksController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<TaskDto>>> GetAll(CancellationToken cancellationToken)
+    public async Task<ActionResult<List<TaskDto>>> GetAll([FromQuery] DateOnly? date, CancellationToken cancellationToken)
     {
         int userId = GetCurrentUserId();
-        List<TaskDto> tasks = await _taskService.GetAllTasksAsync(userId, cancellationToken);
+        List<TaskDto> tasks = await _taskService.GetTasksByDateAsync(userId, date, cancellationToken);
+        return Ok(tasks);
+    }
+
+    [HttpGet("upcoming")]
+    public async Task<ActionResult<List<TaskDto>>> GetUpcoming(CancellationToken cancellationToken)
+    {
+        int userId = GetCurrentUserId();
+        List<TaskDto> tasks = await _taskService.GetUpcomingTasksAsync(userId, cancellationToken);
         return Ok(tasks);
     }
 
@@ -48,34 +56,55 @@ public class TasksController : ControllerBase
     public async Task<ActionResult<TaskDto>> Create([FromBody] CreateTaskDto dto, CancellationToken cancellationToken)
     {
         int userId = GetCurrentUserId();
-        TaskDto createdTask = await _taskService.CreateTaskAsync(dto, userId, cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { id = createdTask.Id }, createdTask);
+        try
+        {
+            TaskDto createdTask = await _taskService.CreateTaskAsync(dto, userId, cancellationToken);
+            return CreatedAtAction(nameof(GetById), new { id = createdTask.Id }, createdTask);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPut("{id:int}")]
     public async Task<ActionResult<TaskDto>> Update(int id, [FromBody] UpdateTaskDto dto, CancellationToken cancellationToken)
     {
         int userId = GetCurrentUserId();
-        TaskDto? updatedTask = await _taskService.UpdateTaskAsync(id, dto, userId, cancellationToken);
-        if (updatedTask == null)
+        try
         {
-            return NotFound();
-        }
+            TaskDto? updatedTask = await _taskService.UpdateTaskAsync(id, dto, userId, cancellationToken);
+            if (updatedTask == null)
+            {
+                return NotFound();
+            }
 
-        return Ok(updatedTask);
+            return Ok(updatedTask);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         int userId = GetCurrentUserId();
-        bool deleted = await _taskService.DeleteTaskAsync(id, userId, cancellationToken);
-        if (!deleted)
+        try
         {
-            return NotFound();
-        }
+            bool deleted = await _taskService.DeleteTaskAsync(id, userId, cancellationToken);
+            if (!deleted)
+            {
+                return NotFound();
+            }
 
-        return NoContent();
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     private int GetCurrentUserId()

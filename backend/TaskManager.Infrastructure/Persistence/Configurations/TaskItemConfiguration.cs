@@ -30,6 +30,17 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
             .IsRequired()
             .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+        builder.Property(t => t.DueDate)
+            .IsRequired()
+            .HasDefaultValueSql("CURRENT_DATE");
+
+        builder.Property(t => t.IsDaily)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        builder.Property(t => t.CompletedAt)
+            .IsRequired(false);
+
         builder.HasOne(t => t.Category)
             .WithMany(c => c.Tasks)
             .HasForeignKey(t => t.CategoryId)

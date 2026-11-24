@@ -1090,3 +1090,242 @@ body {
   border-color: var(--danger);
   color: var(--danger-hover);
 }
+
+
+/* ==========================================================================
+   Feature 2: Date-Based Task Planning, Daily Recurring, and Archive Styles
+   ========================================================================== */
+
+/* View Navigation */
+.view-navigation {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 6px;
+  box-shadow: var(--shadow-sm);
+}
+
+.view-nav-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-muted);
+}
+
+.view-nav-btn:hover {
+  background: var(--bg-main);
+  color: var(--text-main);
+}
+
+.view-nav-btn.active {
+  background: var(--primary-light);
+  border-color: rgba(99, 102, 241, 0.3);
+  color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.view-nav-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.view-nav-text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.view-nav-title {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.view-nav-sub {
+  font-size: 11px;
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
+/* Archive Toolbar */
+.archive-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.archive-date-picker-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.archive-date-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.archive-date-input {
+  max-width: 170px;
+  padding: 7px 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.archive-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Info Banners */
+.info-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+.archive-banner {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: #b45309;
+}
+
+.upcoming-banner {
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: #4338ca;
+}
+
+.archive-readonly-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: 13.5px;
+}
+
+/* Two-column layout in form */
+.form-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Checkbox form group */
+.checkbox-form-group {
+  padding: 10px 14px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.form-checkbox {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.checkbox-text {
+  display: flex;
+  flex-direction: column;
+  font-size: 13.5px;
+  color: var(--text-main);
+}
+
+.checkbox-hint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Badge styles */
+.badge-daily {
+  background-color: rgba(99, 102, 241, 0.12);
+  color: var(--primary);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+}
+
+.badge-missed {
+  background-color: var(--warning-bg);
+  color: var(--warning);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.badge-planned {
+  background-color: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+/* Checkbox states */
+.disabled-future {
+  cursor: not-allowed;
+  opacity: 0.6;
+  background-color: var(--bg-main);
+  border: 2px dashed var(--text-subtle);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.archive-status-indicator {
+  cursor: default;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.archive-status-indicator.missed {
+  border-color: var(--warning);
+  color: var(--warning);
+  background-color: var(--warning-bg);
+}
+
+.archive-card {
+  border-left: 4px solid var(--border-color);
+}
