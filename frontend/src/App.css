@@ -77,6 +77,11 @@
   box-sizing: border-box;
 }
 
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   background-color: var(--bg-main);
   color: var(--text-main);
@@ -95,6 +100,7 @@ body {
   max-width: 1140px;
   margin: 0 auto;
   padding: 28px 20px 60px;
+  box-sizing: border-box;
 }
 
 .app-workspace {
@@ -181,6 +187,12 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.header-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Theme Toggle Button */
@@ -1618,10 +1630,6 @@ body {
     padding: 16px 12px 40px;
   }
 
-  .app-header {
-    padding: 10px 14px;
-  }
-
   .header-subtitle {
     display: none;
   }
@@ -1661,5 +1669,97 @@ body {
 
   .status-filter-tabs {
     justify-content: space-between;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-container {
+    width: 100%;
+    padding: 12px 10px 40px;
+    box-sizing: border-box;
+  }
+
+  /* Two-row clean mobile header */
+  .app-header {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 14px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Row 1: Brand logo + TaskManager AI title (nowrap) + PRO badge */
+  .header-brand {
+    width: 100%;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .brand-logo {
+    width: 32px;
+    height: 32px;
+  }
+
+  .header-title-row {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .header-title {
+    white-space: nowrap;
+    font-size: 16px;
+    line-height: 1.2;
+  }
+
+  .header-subtitle {
+    display: none;
+  }
+
+  /* Row 2: User profile pill on the left, action icon buttons grouped on the right */
+  .header-actions {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-subtle);
+    gap: 8px;
+    box-sizing: border-box;
+  }
+
+  .user-profile-badge {
+    padding: 3px 8px 3px 4px;
+    max-width: 58%;
+    flex-shrink: 1;
+  }
+
+  .user-avatar {
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  .user-name {
+    font-size: 12px;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .header-action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .btn-theme-toggle,
+  .btn-icon-nav {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
   }
 }
