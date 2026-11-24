@@ -9,6 +9,7 @@ public class ApplicationDbContext : DbContext
     {
     }
 
+    public DbSet<User> Users => Set<User>();
     public DbSet<TaskItem> Tasks => Set<TaskItem>();
     public DbSet<Category> Categories => Set<Category>();
 

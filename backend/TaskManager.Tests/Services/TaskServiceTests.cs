@@ -15,6 +15,7 @@ public class TaskServiceTests
 {
     private readonly Mock<ITaskRepository> _repositoryMock;
     private readonly TaskService _taskService;
+    private const int TestUserId = 1;
 
     public TaskServiceTests()
     {
@@ -26,7 +27,7 @@ public class TaskServiceTests
     public async Task GetAllTasksAsync_WhenTasksExist_ReturnsMappedDtos()
     {
         // Arrange
-        Category sampleCategory = new Category { Id = 1, Name = "Work", Color = "#6366f1" };
+        Category sampleCategory = new Category { Id = 1, Name = "Work", Color = "#6366f1", UserId = TestUserId };
         List<TaskItem> mockTasks = new List<TaskItem>
         {
             new TaskItem
@@ -37,7 +38,8 @@ public class TaskServiceTests
                 IsCompleted = false,
                 CreatedAt = DateTime.UtcNow,
                 CategoryId = 1,
-                Category = sampleCategory
+                Category = sampleCategory,
+                UserId = TestUserId
             },
             new TaskItem
             {
@@ -47,16 +49,17 @@ public class TaskServiceTests
                 IsCompleted = true,
                 CreatedAt = DateTime.UtcNow,
                 CategoryId = null,
-                Category = null
+                Category = null,
+                UserId = TestUserId
             }
         };
 
         _repositoryMock
-            .Setup(repo => repo.GetAllAsync(It.IsAny<CancellationToken>()))
+            .Setup(repo => repo.GetAllByUserIdAsync(TestUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockTasks);
 
         // Act
-        List<TaskDto> result = await _taskService.GetAllTasksAsync();
+        List<TaskDto> result = await _taskService.GetAllTasksAsync(TestUserId);
 
         // Assert
         Assert.NotNull(result);
@@ -74,7 +77,7 @@ public class TaskServiceTests
         Assert.Null(result[1].CategoryId);
         Assert.Null(result[1].Category);
 
-        _repositoryMock.Verify(repo => repo.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(repo => repo.GetAllByUserIdAsync(TestUserId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -82,16 +85,16 @@ public class TaskServiceTests
     {
         // Arrange
         _repositoryMock
-            .Setup(repo => repo.GetAllAsync(It.IsAny<CancellationToken>()))
+            .Setup(repo => repo.GetAllByUserIdAsync(TestUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<TaskItem>());
 
         // Act
-        List<TaskDto> result = await _taskService.GetAllTasksAsync();
+        List<TaskDto> result = await _taskService.GetAllTasksAsync(TestUserId);
 
         // Assert
         Assert.NotNull(result);
         Assert.Empty(result);
-        _repositoryMock.Verify(repo => repo.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(repo => repo.GetAllByUserIdAsync(TestUserId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -99,7 +102,7 @@ public class TaskServiceTests
     {
         // Arrange
         int taskId = 10;
-        Category category = new Category { Id = 2, Name = "Personal", Color = "#10b981" };
+        Category category = new Category { Id = 2, Name = "Personal", Color = "#10b981", UserId = TestUserId };
         TaskItem mockTask = new TaskItem
         {
             Id = taskId,
@@ -108,15 +111,16 @@ public class TaskServiceTests
             IsCompleted = false,
             CreatedAt = DateTime.UtcNow,
             CategoryId = 2,
-            Category = category
+            Category = category,
+            UserId = TestUserId
         };
 
         _repositoryMock
-            .Setup(repo => repo.GetByIdAsync(taskId, It.IsAny<CancellationToken>()))
+            .Setup(repo => repo.GetByIdAndUserIdAsync(taskId, TestUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockTask);
 
         // Act
-        TaskDto? result = await _taskService.GetTaskByIdAsync(taskId);
+        TaskDto? result = await _taskService.GetTaskByIdAsync(taskId, TestUserId);
 
         // Assert
         Assert.NotNull(result);
@@ -127,7 +131,7 @@ public class TaskServiceTests
         Assert.Equal(2, result.CategoryId);
         Assert.NotNull(result.Category);
         Assert.Equal("Personal", result.Category!.Name);
-        _repositoryMock.Verify(repo => repo.GetByIdAsync(taskId, It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(repo => repo.GetByIdAndUserIdAsync(taskId, TestUserId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -136,15 +140,15 @@ public class TaskServiceTests
         // Arrange
         int taskId = 999;
         _repositoryMock
-            .Setup(repo => repo.GetByIdAsync(taskId, It.IsAny<CancellationToken>()))
+            .Setup(repo => repo.GetByIdAndUserIdAsync(taskId, TestUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((TaskItem?)null);
 
         // Act
-        TaskDto? result = await _taskService.GetTaskByIdAsync(taskId);
+        TaskDto? result = await _taskService.GetTaskByIdAsync(taskId, TestUserId);
 
         // Assert
         Assert.Null(result);
-        _repositoryMock.Verify(repo => repo.GetByIdAsync(taskId, It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(repo => repo.GetByIdAndUserIdAsync(taskId, TestUserId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -160,7 +164,8 @@ public class TaskServiceTests
             IsCompleted = false,
             CreatedAt = DateTime.UtcNow,
             CategoryId = 1,
-            Category = new Category { Id = 1, Name = "Work", Color = "#6366f1" }
+            Category = new Category { Id = 1, Name = "Work", Color = "#6366f1", UserId = TestUserId },
+            UserId = TestUserId
         };
 
         _repositoryMock
@@ -168,7 +173,7 @@ public class TaskServiceTests
             .ReturnsAsync(persistedTask);
 
         // Act
-        TaskDto result = await _taskService.CreateTaskAsync(createDto);
+        TaskDto result = await _taskService.CreateTaskAsync(createDto, TestUserId);
 
         // Assert
         Assert.NotNull(result);
@@ -179,7 +184,7 @@ public class TaskServiceTests
         Assert.Equal(1, result.CategoryId);
         Assert.NotNull(result.Category);
         _repositoryMock.Verify(repo => repo.AddAsync(
-            It.Is<TaskItem>(t => t.Title == "New Task" && t.Description == "New Description" && !t.IsCompleted && t.CategoryId == 1),
+            It.Is<TaskItem>(t => t.Title == "New Task" && t.Description == "New Description" && !t.IsCompleted && t.CategoryId == 1 && t.UserId == TestUserId),
             It.IsAny<CancellationToken>()),
             Times.Once);
     }
@@ -198,11 +203,12 @@ public class TaskServiceTests
             IsCompleted = false,
             CreatedAt = DateTime.UtcNow,
             CategoryId = 1,
-            Category = new Category { Id = 1, Name = "Old Category", Color = "#000" }
+            Category = new Category { Id = 1, Name = "Old Category", Color = "#000", UserId = TestUserId },
+            UserId = TestUserId
         };
 
         _repositoryMock
-            .Setup(repo => repo.GetByIdAsync(taskId, It.IsAny<CancellationToken>()))
+            .Setup(repo => repo.GetByIdAndUserIdAsync(taskId, TestUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingTask);
 
         _repositoryMock
@@ -210,7 +216,7 @@ public class TaskServiceTests
             .Returns(Task.CompletedTask);
 
         // Act
-        TaskDto? result = await _taskService.UpdateTaskAsync(taskId, updateDto);
+        TaskDto? result = await _taskService.UpdateTaskAsync(taskId, updateDto, TestUserId);
 
         // Assert
         Assert.NotNull(result);
@@ -219,7 +225,7 @@ public class TaskServiceTests
         Assert.Equal("Updated Description", result.Description);
         Assert.True(result.IsCompleted);
         Assert.Equal(3, result.CategoryId);
-        _repositoryMock.Verify(repo => repo.GetByIdAsync(taskId, It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(repo => repo.GetByIdAndUserIdAsync(taskId, TestUserId, It.IsAny<CancellationToken>()), Times.Once);
         _repositoryMock.Verify(repo => repo.UpdateAsync(existingTask, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -231,15 +237,15 @@ public class TaskServiceTests
         UpdateTaskDto updateDto = new UpdateTaskDto("Updated Title", "Updated Description", true, null);
 
         _repositoryMock
-            .Setup(repo => repo.GetByIdAsync(taskId, It.IsAny<CancellationToken>()))
+            .Setup(repo => repo.GetByIdAndUserIdAsync(taskId, TestUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((TaskItem?)null);
 
         // Act
-        TaskDto? result = await _taskService.UpdateTaskAsync(taskId, updateDto);
+        TaskDto? result = await _taskService.UpdateTaskAsync(taskId, updateDto, TestUserId);
 
         // Assert
         Assert.Null(result);
-        _repositoryMock.Verify(repo => repo.GetByIdAsync(taskId, It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(repo => repo.GetByIdAndUserIdAsync(taskId, TestUserId, It.IsAny<CancellationToken>()), Times.Once);
         _repositoryMock.Verify(repo => repo.UpdateAsync(It.IsAny<TaskItem>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -256,11 +262,12 @@ public class TaskServiceTests
             IsCompleted = false,
             CreatedAt = DateTime.UtcNow,
             CategoryId = null,
-            Category = null
+            Category = null,
+            UserId = TestUserId
         };
 
         _repositoryMock
-            .Setup(repo => repo.GetByIdAsync(taskId, It.IsAny<CancellationToken>()))
+            .Setup(repo => repo.GetByIdAndUserIdAsync(taskId, TestUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingTask);
 
         _repositoryMock
@@ -268,11 +275,11 @@ public class TaskServiceTests
             .Returns(Task.CompletedTask);
 
         // Act
-        bool result = await _taskService.DeleteTaskAsync(taskId);
+        bool result = await _taskService.DeleteTaskAsync(taskId, TestUserId);
 
         // Assert
         Assert.True(result);
-        _repositoryMock.Verify(repo => repo.GetByIdAsync(taskId, It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(repo => repo.GetByIdAndUserIdAsync(taskId, TestUserId, It.IsAny<CancellationToken>()), Times.Once);
         _repositoryMock.Verify(repo => repo.DeleteAsync(existingTask, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -282,15 +289,15 @@ public class TaskServiceTests
         // Arrange
         int taskId = 999;
         _repositoryMock
-            .Setup(repo => repo.GetByIdAsync(taskId, It.IsAny<CancellationToken>()))
+            .Setup(repo => repo.GetByIdAndUserIdAsync(taskId, TestUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((TaskItem?)null);
 
         // Act
-        bool result = await _taskService.DeleteTaskAsync(taskId);
+        bool result = await _taskService.DeleteTaskAsync(taskId, TestUserId);
 
         // Assert
         Assert.False(result);
-        _repositoryMock.Verify(repo => repo.GetByIdAsync(taskId, It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(repo => repo.GetByIdAndUserIdAsync(taskId, TestUserId, It.IsAny<CancellationToken>()), Times.Once);
         _repositoryMock.Verify(repo => repo.DeleteAsync(It.IsAny<TaskItem>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

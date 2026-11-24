@@ -15,6 +15,7 @@ public class CategoryServiceTests
 {
     private readonly Mock<ICategoryRepository> _repositoryMock;
     private readonly CategoryService _categoryService;
+    private const int TestUserId = 1;
 
     public CategoryServiceTests()
     {
@@ -28,16 +29,16 @@ public class CategoryServiceTests
         // Arrange
         List<Category> mockCategories = new List<Category>
         {
-            new Category { Id = 1, Name = "Work", Color = "#6366f1" },
-            new Category { Id = 2, Name = "Personal", Color = "#10b981" }
+            new Category { Id = 1, Name = "Work", Color = "#6366f1", UserId = TestUserId },
+            new Category { Id = 2, Name = "Personal", Color = "#10b981", UserId = TestUserId }
         };
 
         _repositoryMock
-            .Setup(repo => repo.GetAllAsync(It.IsAny<CancellationToken>()))
+            .Setup(repo => repo.GetAllByUserIdAsync(TestUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockCategories);
 
         // Act
-        List<CategoryDto> result = await _categoryService.GetAllCategoriesAsync();
+        List<CategoryDto> result = await _categoryService.GetAllCategoriesAsync(TestUserId);
 
         // Assert
         Assert.NotNull(result);
@@ -48,7 +49,7 @@ public class CategoryServiceTests
         Assert.Equal(2, result[1].Id);
         Assert.Equal("Personal", result[1].Name);
         Assert.Equal("#10b981", result[1].Color);
-        _repositoryMock.Verify(repo => repo.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(repo => repo.GetAllByUserIdAsync(TestUserId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -56,16 +57,16 @@ public class CategoryServiceTests
     {
         // Arrange
         _repositoryMock
-            .Setup(repo => repo.GetAllAsync(It.IsAny<CancellationToken>()))
+            .Setup(repo => repo.GetAllByUserIdAsync(TestUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Category>());
 
         // Act
-        List<CategoryDto> result = await _categoryService.GetAllCategoriesAsync();
+        List<CategoryDto> result = await _categoryService.GetAllCategoriesAsync(TestUserId);
 
         // Assert
         Assert.NotNull(result);
         Assert.Empty(result);
-        _repositoryMock.Verify(repo => repo.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(repo => repo.GetAllByUserIdAsync(TestUserId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -73,21 +74,21 @@ public class CategoryServiceTests
     {
         // Arrange
         int categoryId = 5;
-        Category mockCategory = new Category { Id = categoryId, Name = "Finance", Color = "#f59e0b" };
+        Category mockCategory = new Category { Id = categoryId, Name = "Finance", Color = "#f59e0b", UserId = TestUserId };
 
         _repositoryMock
-            .Setup(repo => repo.GetByIdAsync(categoryId, It.IsAny<CancellationToken>()))
+            .Setup(repo => repo.GetByIdAndUserIdAsync(categoryId, TestUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockCategory);
 
         // Act
-        CategoryDto? result = await _categoryService.GetCategoryByIdAsync(categoryId);
+        CategoryDto? result = await _categoryService.GetCategoryByIdAsync(categoryId, TestUserId);
 
         // Assert
         Assert.NotNull(result);
         Assert.Equal(categoryId, result.Id);
         Assert.Equal("Finance", result.Name);
         Assert.Equal("#f59e0b", result.Color);
-        _repositoryMock.Verify(repo => repo.GetByIdAsync(categoryId, It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(repo => repo.GetByIdAndUserIdAsync(categoryId, TestUserId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -96,15 +97,15 @@ public class CategoryServiceTests
         // Arrange
         int categoryId = 999;
         _repositoryMock
-            .Setup(repo => repo.GetByIdAsync(categoryId, It.IsAny<CancellationToken>()))
+            .Setup(repo => repo.GetByIdAndUserIdAsync(categoryId, TestUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Category?)null);
 
         // Act
-        CategoryDto? result = await _categoryService.GetCategoryByIdAsync(categoryId);
+        CategoryDto? result = await _categoryService.GetCategoryByIdAsync(categoryId, TestUserId);
 
         // Assert
         Assert.Null(result);
-        _repositoryMock.Verify(repo => repo.GetByIdAsync(categoryId, It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(repo => repo.GetByIdAndUserIdAsync(categoryId, TestUserId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -112,14 +113,14 @@ public class CategoryServiceTests
     {
         // Arrange
         CreateCategoryDto createDto = new CreateCategoryDto("Health", "#ef4444");
-        Category persistedCategory = new Category { Id = 1, Name = "Health", Color = "#ef4444" };
+        Category persistedCategory = new Category { Id = 1, Name = "Health", Color = "#ef4444", UserId = TestUserId };
 
         _repositoryMock
             .Setup(repo => repo.AddAsync(It.IsAny<Category>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(persistedCategory);
 
         // Act
-        CategoryDto result = await _categoryService.CreateCategoryAsync(createDto);
+        CategoryDto result = await _categoryService.CreateCategoryAsync(createDto, TestUserId);
 
         // Assert
         Assert.NotNull(result);
@@ -127,7 +128,7 @@ public class CategoryServiceTests
         Assert.Equal("Health", result.Name);
         Assert.Equal("#ef4444", result.Color);
         _repositoryMock.Verify(repo => repo.AddAsync(
-            It.Is<Category>(c => c.Name == "Health" && c.Color == "#ef4444"),
+            It.Is<Category>(c => c.Name == "Health" && c.Color == "#ef4444" && c.UserId == TestUserId),
             It.IsAny<CancellationToken>()),
             Times.Once);
     }
@@ -138,10 +139,10 @@ public class CategoryServiceTests
         // Arrange
         int categoryId = 4;
         UpdateCategoryDto updateDto = new UpdateCategoryDto("Fitness", "#10b981");
-        Category existingCategory = new Category { Id = categoryId, Name = "Health", Color = "#ef4444" };
+        Category existingCategory = new Category { Id = categoryId, Name = "Health", Color = "#ef4444", UserId = TestUserId };
 
         _repositoryMock
-            .Setup(repo => repo.GetByIdAsync(categoryId, It.IsAny<CancellationToken>()))
+            .Setup(repo => repo.GetByIdAndUserIdAsync(categoryId, TestUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingCategory);
 
         _repositoryMock
@@ -149,14 +150,14 @@ public class CategoryServiceTests
             .Returns(Task.CompletedTask);
 
         // Act
-        CategoryDto? result = await _categoryService.UpdateCategoryAsync(categoryId, updateDto);
+        CategoryDto? result = await _categoryService.UpdateCategoryAsync(categoryId, updateDto, TestUserId);
 
         // Assert
         Assert.NotNull(result);
         Assert.Equal(categoryId, result.Id);
         Assert.Equal("Fitness", result.Name);
         Assert.Equal("#10b981", result.Color);
-        _repositoryMock.Verify(repo => repo.GetByIdAsync(categoryId, It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(repo => repo.GetByIdAndUserIdAsync(categoryId, TestUserId, It.IsAny<CancellationToken>()), Times.Once);
         _repositoryMock.Verify(repo => repo.UpdateAsync(existingCategory, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -168,15 +169,15 @@ public class CategoryServiceTests
         UpdateCategoryDto updateDto = new UpdateCategoryDto("Fitness", "#10b981");
 
         _repositoryMock
-            .Setup(repo => repo.GetByIdAsync(categoryId, It.IsAny<CancellationToken>()))
+            .Setup(repo => repo.GetByIdAndUserIdAsync(categoryId, TestUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Category?)null);
 
         // Act
-        CategoryDto? result = await _categoryService.UpdateCategoryAsync(categoryId, updateDto);
+        CategoryDto? result = await _categoryService.UpdateCategoryAsync(categoryId, updateDto, TestUserId);
 
         // Assert
         Assert.Null(result);
-        _repositoryMock.Verify(repo => repo.GetByIdAsync(categoryId, It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(repo => repo.GetByIdAndUserIdAsync(categoryId, TestUserId, It.IsAny<CancellationToken>()), Times.Once);
         _repositoryMock.Verify(repo => repo.UpdateAsync(It.IsAny<Category>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -185,10 +186,10 @@ public class CategoryServiceTests
     {
         // Arrange
         int categoryId = 2;
-        Category existingCategory = new Category { Id = categoryId, Name = "To Delete", Color = null };
+        Category existingCategory = new Category { Id = categoryId, Name = "To Delete", Color = null, UserId = TestUserId };
 
         _repositoryMock
-            .Setup(repo => repo.GetByIdAsync(categoryId, It.IsAny<CancellationToken>()))
+            .Setup(repo => repo.GetByIdAndUserIdAsync(categoryId, TestUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingCategory);
 
         _repositoryMock
@@ -196,11 +197,11 @@ public class CategoryServiceTests
             .Returns(Task.CompletedTask);
 
         // Act
-        bool result = await _categoryService.DeleteCategoryAsync(categoryId);
+        bool result = await _categoryService.DeleteCategoryAsync(categoryId, TestUserId);
 
         // Assert
         Assert.True(result);
-        _repositoryMock.Verify(repo => repo.GetByIdAsync(categoryId, It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(repo => repo.GetByIdAndUserIdAsync(categoryId, TestUserId, It.IsAny<CancellationToken>()), Times.Once);
         _repositoryMock.Verify(repo => repo.DeleteAsync(existingCategory, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -210,15 +211,15 @@ public class CategoryServiceTests
         // Arrange
         int categoryId = 999;
         _repositoryMock
-            .Setup(repo => repo.GetByIdAsync(categoryId, It.IsAny<CancellationToken>()))
+            .Setup(repo => repo.GetByIdAndUserIdAsync(categoryId, TestUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Category?)null);
 
         // Act
-        bool result = await _categoryService.DeleteCategoryAsync(categoryId);
+        bool result = await _categoryService.DeleteCategoryAsync(categoryId, TestUserId);
 
         // Assert
         Assert.False(result);
-        _repositoryMock.Verify(repo => repo.GetByIdAsync(categoryId, It.IsAny<CancellationToken>()), Times.Once);
+        _repositoryMock.Verify(repo => repo.GetByIdAndUserIdAsync(categoryId, TestUserId, It.IsAny<CancellationToken>()), Times.Once);
         _repositoryMock.Verify(repo => repo.DeleteAsync(It.IsAny<Category>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

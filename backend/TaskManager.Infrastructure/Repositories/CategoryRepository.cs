@@ -1,3 +1,7 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using TaskManager.Application.Interfaces;
 using TaskManager.Domain.Entities;
@@ -14,20 +18,21 @@ public class CategoryRepository : ICategoryRepository
         _context = context;
     }
 
-    public async Task<List<Category>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<List<Category>> GetAllByUserIdAsync(int userId, CancellationToken cancellationToken = default)
     {
         List<Category> categories = await _context.Categories
             .AsNoTracking()
+            .Where(c => c.UserId == userId)
             .OrderBy(c => c.Name)
             .ToListAsync(cancellationToken);
 
         return categories;
     }
 
-    public async Task<Category?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<Category?> GetByIdAndUserIdAsync(int id, int userId, CancellationToken cancellationToken = default)
     {
         Category? category = await _context.Categories
-            .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId, cancellationToken);
 
         return category;
     }

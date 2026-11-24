@@ -1,7 +1,8 @@
 import type { CreateTaskDto, TaskDto, UpdateTaskDto } from '../types/task';
 import { API_BASE_URL } from './apiConfig';
+import { authService } from './authService';
 
-class ApiError extends Error {
+export class ApiError extends Error {
   public statusCode: number;
 
   constructor(message: string, statusCode: number) {
@@ -12,10 +13,15 @@ class ApiError extends Error {
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
+  if (response.status === 401) {
+    authService.logout();
+    throw new ApiError('Session expired. Please log in again.', 401);
+  }
+
   if (!response.ok) {
-    let errorMessage = `Request failed with status ${response.status}`;
+    let errorMessage: string = `Request failed with status ${response.status}`;
     try {
-      const errorData = await response.json();
+      const errorData = (await response.json()) as { title?: string; message?: string };
       if (errorData && typeof errorData.title === 'string') {
         errorMessage = errorData.title;
       } else if (errorData && typeof errorData.message === 'string') {
@@ -36,31 +42,34 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
 export const taskService = {
   async getTasks(): Promise<TaskDto[]> {
-    const response = await fetch(`${API_BASE_URL}/tasks`, {
+    const response: Response = await fetch(`${API_BASE_URL}/tasks`, {
       method: 'GET',
       headers: {
-        'Accept': 'application/json',
+        Accept: 'application/json',
+        ...authService.getAuthHeaders(),
       },
     });
     return handleResponse<TaskDto[]>(response);
   },
 
   async getTaskById(id: number): Promise<TaskDto> {
-    const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
+    const response: Response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
       method: 'GET',
       headers: {
-        'Accept': 'application/json',
+        Accept: 'application/json',
+        ...authService.getAuthHeaders(),
       },
     });
     return handleResponse<TaskDto>(response);
   },
 
   async createTask(dto: CreateTaskDto): Promise<TaskDto> {
-    const response = await fetch(`${API_BASE_URL}/tasks`, {
+    const response: Response = await fetch(`${API_BASE_URL}/tasks`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        Accept: 'application/json',
+        ...authService.getAuthHeaders(),
       },
       body: JSON.stringify(dto),
     });
@@ -68,11 +77,12 @@ export const taskService = {
   },
 
   async updateTask(id: number, dto: UpdateTaskDto): Promise<TaskDto> {
-    const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
+    const response: Response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        Accept: 'application/json',
+        ...authService.getAuthHeaders(),
       },
       body: JSON.stringify(dto),
     });
@@ -80,8 +90,11 @@ export const taskService = {
   },
 
   async deleteTask(id: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
+    const response: Response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
       method: 'DELETE',
+      headers: {
+        ...authService.getAuthHeaders(),
+      },
     });
     return handleResponse<void>(response);
   },

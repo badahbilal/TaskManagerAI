@@ -1,16 +1,20 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { AuthView } from './components/AuthView';
 import { CategoryManager } from './components/CategoryManager';
 import { TaskFilters } from './components/TaskFilters';
 import { TaskForm } from './components/TaskForm';
 import { TaskItem } from './components/TaskItem';
 import { TaskStats } from './components/TaskStats';
+import { authService } from './services/authService';
 import { categoryService } from './services/categoryService';
 import { taskService } from './services/taskService';
+import type { UserDto } from './types/auth';
 import type { CategoryDto, CreateCategoryDto } from './types/category';
 import type { CreateTaskDto, TaskDto, TaskFilter, UpdateTaskDto } from './types/task';
 import './App.css';
 
 export const App: React.FC = () => {
+  const [currentUser, setCurrentUser] = useState<UserDto | null>(() => authService.getUser());
   const [tasks, setTasks] = useState<TaskDto[]>([]);
   const [categories, setCategories] = useState<CategoryDto[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -22,7 +26,20 @@ export const App: React.FC = () => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  useEffect(() => {
+    const handleAuthChange = (): void => {
+      setCurrentUser(authService.getUser());
+    };
+    window.addEventListener('auth-changed', handleAuthChange);
+    return () => window.removeEventListener('auth-changed', handleAuthChange);
+  }, []);
+
   const loadData = useCallback(async (): Promise<void> => {
+    if (!authService.isAuthenticated()) {
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setErrorMessage(null);
     try {
@@ -41,8 +58,13 @@ export const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (currentUser) {
+      loadData();
+    } else {
+      setTasks([]);
+      setCategories([]);
+    }
+  }, [currentUser, loadData]);
 
   const handleCreateTask = async (
     title: string,
@@ -144,7 +166,6 @@ export const App: React.FC = () => {
     try {
       await categoryService.deleteCategory(id);
       setCategories((prev) => prev.filter((c) => c.id !== id));
-      // Backend automatically sets task.categoryId to null via SetNull delete behavior
       setTasks((prev) =>
         prev.map((t) => (t.categoryId === id ? { ...t, categoryId: null, category: null } : t))
       );
@@ -157,6 +178,13 @@ export const App: React.FC = () => {
     } finally {
       setIsCategorySubmitting(false);
     }
+  };
+
+  const handleLogout = (): void => {
+    authService.logout();
+    setCurrentUser(null);
+    setTasks([]);
+    setCategories([]);
   };
 
   const completedCount = useMemo(
@@ -188,6 +216,17 @@ export const App: React.FC = () => {
       });
   }, [tasks, filter, selectedCategoryId, searchQuery]);
 
+  if (!currentUser) {
+    return <AuthView onAuthSuccess={(user: UserDto) => setCurrentUser(user)} />;
+  }
+
+  const userInitials = currentUser.fullName
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
+
   return (
     <div className="app-container">
       <header className="app-header">
@@ -206,22 +245,44 @@ export const App: React.FC = () => {
           </div>
           <div>
             <h1 className="header-title">TaskManager AI</h1>
-            <p className="header-subtitle">Clean Architecture .NET 10 & React</p>
+            <p className="header-subtitle">Isolated Workspace (.NET 10 & React)</p>
           </div>
         </div>
-        <button
-          type="button"
-          className="btn btn-secondary btn-refresh"
-          onClick={loadData}
-          disabled={isLoading}
-          title="Refresh tasks and categories"
-        >
-          <svg className={isLoading ? 'spinning' : ''} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="23 4 23 10 17 10" />
-            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-          </svg>
-          Refresh
-        </button>
+
+        <div className="header-actions">
+          <div className="user-profile-badge" title={currentUser.email}>
+            <span className="user-avatar">{userInitials}</span>
+            <span className="user-name">{currentUser.fullName}</span>
+          </div>
+
+          <button
+            type="button"
+            className="btn btn-secondary btn-refresh"
+            onClick={loadData}
+            disabled={isLoading}
+            title="Refresh tasks and categories"
+          >
+            <svg className={isLoading ? 'spinning' : ''} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 4 23 10 17 10" />
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+            </svg>
+            Refresh
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-secondary btn-logout"
+            onClick={handleLogout}
+            title="Sign out of your account"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            Logout
+          </button>
+        </div>
       </header>
 
       {errorMessage && (
@@ -232,7 +293,7 @@ export const App: React.FC = () => {
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
           <div className="alert-content">
-            <span className="alert-title">API Notice:</span> {errorMessage}
+            <span className="alert-title">Notice:</span> {errorMessage}
           </div>
           <button
             type="button"
@@ -284,7 +345,7 @@ export const App: React.FC = () => {
               {isLoading ? (
                 <div className="loading-state">
                   <div className="spinner" />
-                  <p>Loading tasks and categories from .NET 10 API...</p>
+                  <p>Loading your tasks...</p>
                 </div>
               ) : filteredTasks.length === 0 ? (
                 <div className="empty-state">
@@ -305,7 +366,7 @@ export const App: React.FC = () => {
                       ? 'No tasks found in the selected category.'
                       : filter !== 'all'
                       ? `No ${filter} tasks right now.`
-                      : 'You have no tasks yet. Create your first task using the form on the left!'}
+                      : 'You have no tasks yet in your isolated workspace. Create one on the left!'}
                   </p>
                 </div>
               ) : (
